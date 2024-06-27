@@ -17,7 +17,6 @@ from pandas.api.types import (
 st.set_page_config(page_title='Association rule mining app', layout='centered')
 
 def ensure_quotes_in_csv(file_obj):
-    # Read the contents of the uploaded file
     lines = file_obj.getvalue().decode("utf-8").splitlines()
 
     updated_lines = []
@@ -27,7 +26,6 @@ def ensure_quotes_in_csv(file_obj):
             line = f'"{line}"'
         updated_lines.append(line)
     
-    # Convert the updated lines back to a file-like object
     updated_file_obj = io.StringIO("\n".join(updated_lines))
     return updated_file_obj
 
@@ -39,7 +37,6 @@ def load_transaction(file):
         st.error("Uploaded CSV file must have exactly one column.")
         return None, None
 
-    # Single column case
     transactions = data.iloc[:, 0].apply(lambda x: x.split(',')).tolist()
     
     unique_items = get_unique_item(transactions)
