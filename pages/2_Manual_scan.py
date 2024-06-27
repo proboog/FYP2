@@ -15,7 +15,6 @@ from pandas.api.types import (
 st.set_page_config(page_title='Association rule mining app', layout='centered')
 
 def ensure_quotes_in_csv(file_obj):
-    # Read the contents of the uploaded file
     lines = file_obj.getvalue().decode("utf-8").splitlines()
 
     updated_lines = []
@@ -25,7 +24,6 @@ def ensure_quotes_in_csv(file_obj):
             line = f'"{line}"'
         updated_lines.append(line)
     
-    # Convert the updated lines back to a file-like object
     updated_file_obj = io.StringIO("\n".join(updated_lines))
     return updated_file_obj
 
@@ -37,7 +35,6 @@ def load_transaction(file):
         st.error("Uploaded CSV file must have exactly one column.")
         return None, None
 
-    # Single column case
     transactions = data.iloc[:, 0].apply(lambda x: x.split(',')).tolist()
     
     unique_items = get_unique_item(transactions)
@@ -291,7 +288,6 @@ if uploaded_csv is not None:
                     all_frequent_itemsets.append({
                         'Itemset': ', '.join(itemset),
                         'Support Count': f"{(supp_count_L[k][i] / num_trans):.3f}"
-                        # 'Support Count': supp_count_L[k][i]
                     })
             all_frequent_itemsets_df = pd.DataFrame(all_frequent_itemsets)
             st.dataframe(all_frequent_itemsets_df, use_container_width=True)
@@ -308,16 +304,13 @@ if uploaded_csv is not None:
                             if conf >= min_conf:
                                 supp = count_occurences(itemset, Transaction)
                                 lift = conf / (count_occurences(X_S, Transaction) / num_trans)
-                                # rules_output += write_rules(itemset, X_S, s, conf, supp, lift, num_trans)
                                 rules.append(write_rules(itemset, X_S, s, conf, supp, num_trans))
             if len(rules) == 0:
                 st.warning(f"No association rules found. Try lowering the minimum confidence value or the minimum support value")
             else:
                 rules_df = pd.DataFrame(rules)
-                # st.dataframe(data=rules_df, use_container_width=True)
                 filtered_rule = filter_dataframe(rules_df)
                 st.dataframe(data=filtered_rule, use_container_width=True)
-                # st.subheader('Rows containing the rules')
                 rule_matches = find_rule_matches(filtered_rule, Transaction)
                 expander = st.expander('Rows containing the rules')
                 with expander:
