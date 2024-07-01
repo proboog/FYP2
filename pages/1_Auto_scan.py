@@ -17,6 +17,7 @@ from pandas.api.types import (
 st.set_page_config(page_title='Association rule mining app', layout='centered')
 
 def ensure_quotes_in_csv(file_obj):
+    # Read the contents of the uploaded file
     lines = file_obj.getvalue().decode("utf-8").splitlines()
 
     updated_lines = []
@@ -26,8 +27,19 @@ def ensure_quotes_in_csv(file_obj):
             line = f'"{line}"'
         updated_lines.append(line)
     
+    # Convert the updated lines back to a file-like object
     updated_file_obj = io.StringIO("\n".join(updated_lines))
     return updated_file_obj
+
+def CSV_preprocess(data):
+    # Convert list of transactions to DataFrame
+    data_df = pd.DataFrame(data)
+    # Replace None with empty strings
+    data_df = data_df.map(lambda x: '' if x is None else x)
+    data_df = data_df.apply(lambda x: ','.join(x), axis=1).to_frame()
+    data_df.index.rename('TID', inplace=True)
+    data_df.rename(columns={data_df.columns[0]: 'item_set'}, inplace=True)
+    return data_df
 
 def load_transaction(file):
     updated_file = ensure_quotes_in_csv(file)
@@ -37,8 +49,9 @@ def load_transaction(file):
         st.error("Uploaded CSV file must have exactly one column.")
         return None, None
 
-    transactions = data.iloc[:, 0].apply(lambda x: x.split(',')).tolist()
-    
+    # Remove duplicates
+    transactions = data.iloc[:, 0].apply(lambda x: list(set(x.split(',')))).tolist()
+
     unique_items = get_unique_item(transactions)
     return transactions, unique_items
 
@@ -221,7 +234,7 @@ if uploaded_csv is not None:
         if Transaction is None:
             st.stop()
         st.subheader('Uploaded CSV file')
-        display_dataframe = pd.read_csv(uploaded_csv, header=None)
+        display_dataframe = CSV_preprocess(pd.read_csv(uploaded_csv, header=None))
         st.dataframe(data=display_dataframe, use_container_width=True)
 
         st.subheader('Minimum support and minimum confidence combinations')
