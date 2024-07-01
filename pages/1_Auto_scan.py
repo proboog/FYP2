@@ -234,7 +234,7 @@ if uploaded_csv is not None:
         if Transaction is None:
             st.stop()
         st.subheader('Uploaded CSV file')
-        display_dataframe = CSV_preprocess(pd.read_csv(uploaded_csv, header=None))
+        display_dataframe = CSV_preprocess(Transaction)
         st.dataframe(data=display_dataframe, use_container_width=True)
 
         st.subheader('Minimum support and minimum confidence combinations')
