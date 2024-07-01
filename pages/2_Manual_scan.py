@@ -15,6 +15,7 @@ from pandas.api.types import (
 st.set_page_config(page_title='Association rule mining app', layout='centered')
 
 def ensure_quotes_in_csv(file_obj):
+    # Read the contents of the uploaded file
     lines = file_obj.getvalue().decode("utf-8").splitlines()
 
     updated_lines = []
@@ -24,8 +25,19 @@ def ensure_quotes_in_csv(file_obj):
             line = f'"{line}"'
         updated_lines.append(line)
     
+    # Convert the updated lines back to a file-like object
     updated_file_obj = io.StringIO("\n".join(updated_lines))
     return updated_file_obj
+
+def CSV_preprocess(data):
+    # Convert list of transactions to DataFrame
+    data_df = pd.DataFrame(data)
+    # Replace None with empty strings
+    data_df = data_df.map(lambda x: '' if x is None else x)
+    data_df = data_df.apply(lambda x: ','.join(x), axis=1).to_frame()
+    data_df.index.rename('TID', inplace=True)
+    data_df.rename(columns={data_df.columns[0]: 'item_set'}, inplace=True)
+    return data_df
 
 def load_transaction(file):
     updated_file = ensure_quotes_in_csv(file)
@@ -35,8 +47,9 @@ def load_transaction(file):
         st.error("Uploaded CSV file must have exactly one column.")
         return None, None
 
-    transactions = data.iloc[:, 0].apply(lambda x: x.split(',')).tolist()
-    
+    # Single column case
+    transactions = data.iloc[:, 0].apply(lambda x: list(set(x.split(',')))).tolist()  # Remove duplicates
+
     unique_items = get_unique_item(transactions)
     return transactions, unique_items
 
@@ -255,7 +268,7 @@ if uploaded_csv is not None:
         if Transaction is None:
             st.stop()
         st.subheader('Uploaded CSV file')
-        display_dataframe = pd.read_csv(uploaded_csv, header=None)
+        display_dataframe = CSV_preprocess(Transaction)
         st.dataframe(data=display_dataframe, use_container_width=True)
         num_trans = len(Transaction)
         order = sorted(order)
@@ -288,6 +301,7 @@ if uploaded_csv is not None:
                     all_frequent_itemsets.append({
                         'Itemset': ', '.join(itemset),
                         'Support Count': f"{(supp_count_L[k][i] / num_trans):.3f}"
+                        # 'Support Count': supp_count_L[k][i]
                     })
             all_frequent_itemsets_df = pd.DataFrame(all_frequent_itemsets)
             st.dataframe(all_frequent_itemsets_df, use_container_width=True)
@@ -304,13 +318,16 @@ if uploaded_csv is not None:
                             if conf >= min_conf:
                                 supp = count_occurences(itemset, Transaction)
                                 lift = conf / (count_occurences(X_S, Transaction) / num_trans)
+                                # rules_output += write_rules(itemset, X_S, s, conf, supp, lift, num_trans)
                                 rules.append(write_rules(itemset, X_S, s, conf, supp, num_trans))
             if len(rules) == 0:
                 st.warning(f"No association rules found. Try lowering the minimum confidence value or the minimum support value")
             else:
                 rules_df = pd.DataFrame(rules)
+                # st.dataframe(data=rules_df, use_container_width=True)
                 filtered_rule = filter_dataframe(rules_df)
                 st.dataframe(data=filtered_rule, use_container_width=True)
+                # st.subheader('Rows containing the rules')
                 rule_matches = find_rule_matches(filtered_rule, Transaction)
                 expander = st.expander('Rows containing the rules')
                 with expander:
